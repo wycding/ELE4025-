@@ -38,10 +38,10 @@ net = newff(p_train, t_train, 6);
 
 %%  Set training parameters
 %Sets the maximum number of training iterations (epochs) to 1000.
-net.trainParam.epochs = 1000;   % 最大迭代次数
+net.trainParam.epochs = 1000; 
 %Defines the target training error; the training will stop once the error falls below (1e-6).
-net.trainParam.goal = 1e-6;     % 目标训练误差
-net.trainParam.lr = 0.01;       % 学习率
+net.trainParam.goal = 1e-6;     % target error
+net.trainParam.lr = 0.01;       % learnning rate
 
 %%  Network
 % This line trains the neural network using the normalized training inputs p_train and one-hot encoded targets t_train.
