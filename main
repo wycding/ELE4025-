@@ -1,0 +1,92 @@
+%%  Clear environment
+close all               % 
+clear                   % 
+clc                     % 
+
+%%  input data
+res = xlsread('dataset.xlsx');
+
+%%  Divide the training set and testing set
+temp = randperm(357); % generates a random permutation of integers from 1 to 357
+P_train = res(temp(1: 240), 1: 12)';%selects the first 240 indices from the shuffled list for training.
+%extracts the rows from the dataset res corresponding to these indices and selects columns 1 to 12.
+%The result is then transposed (flipped from rows to columns), creating the training feature set
+T_train = res(temp(1: 240), 13)';%It selects the 13th column from the same 240 randomly chosen rows and transposes it.
+M = size(P_train, 2);
+
+P_test = res(temp(241: end), 1: 12)';
+T_test = res(temp(241: end), 13)';
+N = size(P_test, 2);
+
+%%  Data normalization
+%This line normalizes the training data P_train to a range between 0 and 1 using the mapminmax function. 
+% It also returns the ps_input structure containing scaling parameters for later use.
+[p_train, ps_input] = mapminmax(P_train, 0, 1);
+%This applies the same normalization to the test data P_test using the scaling parameters from ps_input
+p_test  = mapminmax('apply', P_test, ps_input);
+%This applies the same normalization to the test data P_test using the scaling parameters from ps_input
+t_train = ind2vec(T_train);
+%Converts the target labels T_test into a one-hot encoded format for testing.
+t_test  = ind2vec(T_test );
+
+%%  Create model
+%Creates a new feedforward neural network with the input data p_train and target data t_train, 
+% using 6 neurons in the hidden layer.
+net = newff(p_train, t_train, 6);
+%This parameter represents the input training data.
+%This parameter contains the target output for the training samples.
+
+%%  Set training parameters
+%Sets the maximum number of training iterations (epochs) to 1000.
+net.trainParam.epochs = 1000;   % 最大迭代次数
+%Defines the target training error; the training will stop once the error falls below (1e-6).
+net.trainParam.goal = 1e-6;     % 目标训练误差
+net.trainParam.lr = 0.01;       % 学习率
+
+%%  Network
+% This line trains the neural network using the normalized training inputs p_train and one-hot encoded targets t_train.
+net = train(net, p_train, t_train);
+
+%%  Simulation
+%Simulates the trained network on the training input data p_train to get predictions.
+t_sim1 = sim(net, p_train);
+%Simulate the trained network on the test input data p_test to obtain predictions.
+t_sim2 = sim(net, p_test );
+
+%%  Data de normalization
+%Converts the one-hot encoded simulation output t_sim1 back to class indices for easy comparison.
+T_sim1 = vec2ind(t_sim1);
+%converts the one-hot encoded simulation output t_sim2 back to class indices.
+T_sim2 = vec2ind(t_sim2);
+
+%%  data sorting
+%Sorts the training target labels T_train and returns the sorted list along with the indices.
+[T_train, index_1] = sort(T_train);
+%Sorts the test target labels `
+[T_test , index_2] = sort(T_test );
+
+T_sim1 = T_sim1(index_1);
+T_sim2 = T_sim2(index_2);
+
+%%  performance evaluation
+error1 = sum((T_sim1 == T_train)) / M * 100 ;
+error2 = sum((T_sim2 == T_test )) / N * 100 ;
+
+%%  Plot
+figure
+plot(1: M, T_train, 'r-*', 1: M, T_sim1, 'b-o', 'LineWidth', 1)
+legend('Ground Truth', 'Predicted Value')
+xlabel('Predicted Samples')
+ylabel('Prediction Results')
+string = {strcat('Comparison of Training Set Prediction Results：', ['Accuracy=' num2str(error1) '%'])};
+title(string)
+grid
+
+figure
+plot(1: N, T_test, 'r-*', 1: N, T_sim2, 'b-o', 'LineWidth', 1)
+legend('Ground Truth', 'Predicted Value')
+xlabel('Predicted Samples')
+ylabel('Prediction Results')
+string = {strcat('Comparison of Test Set Prediction Results：', ['Accuracy=' num2str(error2) '%'])};
+title(string)
+grid
